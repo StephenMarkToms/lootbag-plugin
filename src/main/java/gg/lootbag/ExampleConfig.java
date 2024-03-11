@@ -8,12 +8,23 @@ import net.runelite.client.config.ConfigItem;
 public interface ExampleConfig extends Config
 {
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "name",
+		name = "Name",
+		description = "Name to use when logging into Lootbag.gg"
 	)
-	default String greeting()
+	default String name()
 	{
-		return "Hello";
+		return "";
+	}
+
+	@ConfigItem(
+			keyName = "token",
+			name = "Token",
+			description = "Token used when logging into Lootbag.gg",
+			secret = true
+	)
+	default String token()
+	{
+		return "";
 	}
 }

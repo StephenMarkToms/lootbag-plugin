@@ -16,7 +16,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 @PluginDescriptor(
 	name = "Lootbag"
 )
-public class ExamplePlugin extends Plugin
+public class LootbagPlugin extends Plugin
 {
 	@Inject
 	private Client client;
@@ -27,13 +27,13 @@ public class ExamplePlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.info("Example started! ");
+		log.info("Lootbag started! ");
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
-		log.info("Example stopped!");
+		log.info("Lootbag stopped!");
 	}
 
 	@Subscribe
@@ -41,7 +41,7 @@ public class ExamplePlugin extends Plugin
 	{
 		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.name(), null);
 		}
 	}
 
