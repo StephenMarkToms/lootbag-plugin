@@ -27,7 +27,7 @@ public class ExamplePlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.info("Example started!");
+		log.info("Example started! ");
 	}
 
 	@Override
