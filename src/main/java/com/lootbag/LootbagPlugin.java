@@ -129,7 +129,7 @@ public class LootbagPlugin extends Plugin
 			.build();
 
 		clientToolbar.addNavigation(navButton);
-		log.info("Lootbag side panel added to toolbar.");
+
 
 		cachedJwtToken = null;
 		tokenExpiryTime = 0;
@@ -145,11 +145,11 @@ public class LootbagPlugin extends Plugin
 		String password = config.password();
 		if (username != null && !username.isEmpty() && password != null && !password.isEmpty())
 		{
-			log.info("Found saved credentials, attempting auto-login...");
+			log.debug("Found saved credentials, attempting auto-login...");
 			login(username, password, (success, message) -> {
 				if (success)
 				{
-					log.info("Auto-login successful");
+					log.debug("Auto-login successful");
 				}
 				else
 				{
