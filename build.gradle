@@ -3,7 +3,7 @@ plugins {
 }
 
 repositories {
-	// mavenLocal()
+
 	maven {
 		url = 'https://repo.runelite.net'
 		content {
@@ -39,18 +39,7 @@ tasks.register('run', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = pluginMainClass
 
-	jvmArgs = [
-		"-ea",
-		"--add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED",
-		"--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED",
-		"--add-opens=java.base/java.net=ALL-UNNAMED",
-		"--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
-		"--add-opens=java.base/java.util=ALL-UNNAMED",
-		"--add-opens=java.base/java.text=ALL-UNNAMED",
-		"--add-opens=java.desktop/sun.awt=ALL-UNNAMED",
-		"--add-opens=java.desktop/sun.font=ALL-UNNAMED",
-		"--add-opens=java.desktop/sun.java2d.opengl=ALL-UNNAMED"
-	]
+	jvmArgs "-ea"
 	args "--developer-mode", "--debug"
 }
 
