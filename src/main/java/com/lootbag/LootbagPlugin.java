@@ -50,8 +50,7 @@ import java.awt.image.BufferedImage;
 @PluginDescriptor(
 	name = "Lootbag",
 	description = "Track your loot and bank value",
-	tags = { "grand exchange", "loot", "bank", "value", "flipping", "GE", "GE tracker", "merching", "merch" },
-	enabledByDefault = true
+	tags = { "grand exchange", "loot", "bank", "value", "flipping", "GE", "GE tracker", "merching", "merch" }
 )
 public class LootbagPlugin extends Plugin
 {
