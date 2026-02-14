@@ -179,6 +179,7 @@ public class LootbagPlugin extends Plugin
 		if (navButton != null)
 		{
 			clientToolbar.removeNavigation(navButton);
+			navButton = null;
 		}
 		cachedJwtToken = null;
 		tokenExpiryTime = 0;
