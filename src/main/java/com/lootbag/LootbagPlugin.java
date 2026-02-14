@@ -160,7 +160,7 @@ public class LootbagPlugin extends Plugin
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		log.debug("Lootbag shutting down...");
 		
