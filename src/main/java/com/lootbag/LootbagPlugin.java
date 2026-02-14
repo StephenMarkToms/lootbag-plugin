@@ -8,11 +8,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.lang.reflect.Type;
-import com.google.gson.reflect.TypeToken;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +93,7 @@ public class LootbagPlugin extends Plugin
 	private Map<Integer, GrandExchangeOffer> lastGEOffers = new HashMap<>();
 
 	@Override
-	protected void startUp() throws Exception
+	protected void startUp()
 	{
 		log.debug("Lootbag started!");
 		BufferedImage icon;
