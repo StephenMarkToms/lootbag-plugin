@@ -167,26 +167,13 @@ public class LootbagPlugin extends Plugin
 		// Sync bank on shutdown if we have data and are logged in
 		if (pendingBankItems != null && cachedJwtToken != null)
 		{
-			log.info("Performing final bank sync before shutdown...");
+			log.info("Initiating final bank sync before shutdown...");
 			final Map<Integer, Integer> itemsToSync = pendingBankItems;
 			final String tokenToUse = cachedJwtToken;
 			final long bankValue = calculateBankValue(pendingBankItems);
 			
-			// Run on background thread and wait for completion
-			Thread syncThread = new Thread(() -> {
-				submitBankDataSync(itemsToSync, tokenToUse, bankValue);
-			});
-			syncThread.start();
-			
-			try
-			{
-				// Wait up to 5 seconds for sync to complete
-				syncThread.join(5000);
-			}
-			catch (InterruptedException e)
-			{
-				log.warn("Shutdown sync interrupted", e);
-			}
+			// Fire and forget - don't block shutdown
+			submitBankData(itemsToSync, tokenToUse, bankValue);
 		}
 		
 		if (navButton != null)
