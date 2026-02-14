@@ -202,12 +202,6 @@ public class LootbagPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
-	{
-		// No special handling needed for standard config items now that we use a panel
-	}
-
-	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
 		// Sync on logout
@@ -220,10 +214,8 @@ public class LootbagPlugin extends Plugin
 				final String tokenToUse = cachedJwtToken;
 				final long bankValue = calculateBankValue(pendingBankItems);
 				
-				// Run on background thread since client thread blocks sync HTTP calls
-				new Thread(() -> {
-					submitBankDataSync(itemsToSync, tokenToUse, bankValue);
-				}).start();
+				// Fire and forget - don't block
+				submitBankData(itemsToSync, tokenToUse, bankValue);
 			}
 			hasSyncedThisSession = false;
 		}
@@ -314,10 +306,8 @@ public class LootbagPlugin extends Plugin
 							previous.getSpent());
 
 						// Submit previous
-						final GrandExchangeOffer offerToSubmit = previous;
-						new Thread(() -> {
-							submitGETrade(offerToSubmit);
-						}).start();
+						// Fire and forget
+						submitGETrade(previous);
 					}
 					else
 					{
@@ -734,105 +724,8 @@ public class LootbagPlugin extends Plugin
 		});
 	}
 
-	/**
-	 * Synchronous version of submitBankData for use during shutdown.
-	 * Blocks until the request completes to ensure data is sent before plugin closes.
-	 */
-	private void submitBankDataSync(Map<Integer, Integer> bankItems, String jwtToken, long bankValue)
-	{
-		String syncServerUrl = config.syncServerUrl();
 
-		if (syncServerUrl == null || syncServerUrl.isEmpty())
-		{
-			log.warn("Sync server URL not configured");
-			return;
-		}
 
-		// Get the player's RSN from the client
-		String rsn = client.getLocalPlayer() != null ? client.getLocalPlayer().getName() : null;
-		if (rsn == null || rsn.isEmpty())
-		{
-			log.warn("Unable to determine player RSN, skipping sync");
-			return;
-		}
-
-		// Build current bank state
-		Map<String, Integer> bankData = new HashMap<>();
-		for (Map.Entry<Integer, Integer> entry : bankItems.entrySet())
-		{
-			bankData.put(String.valueOf(entry.getKey()), entry.getValue());
-		}
-
-		// Compute delta
-		Map<String, Object> delta = computeBankDelta(bankData);
-		
-		// Skip sync if nothing changed
-		if (delta == null)
-		{
-			log.info("No bank changes detected, skipping sync");
-			return;
-		}
-
-		// Compute checksum for integrity verification
-		String checksum = computeBankChecksum(bankData);
-
-		// Build payload
-		Map<String, Object> payload = new HashMap<>();
-		payload.put("rsn", rsn);
-		payload.put("timestamp", System.currentTimeMillis());
-		payload.put("checksum", checksum);
-		payload.put("bankValue", bankValue);
-		
-		// Include delta information
-		String syncType = (String) delta.get("type");
-		payload.put("syncType", syncType);
-		
-		if ("full".equals(syncType))
-		{
-			payload.put("data", delta.get("data"));
-		}
-		else
-		{
-			Map<String, Object> changes = new HashMap<>();
-			changes.put("added", delta.get("added"));
-			changes.put("updated", delta.get("updated"));
-			changes.put("removed", delta.get("removed"));
-			payload.put("changes", changes);
-		}
-
-		String jsonPayload = gson.toJson(payload);
-		log.debug("Sync shutdown - Bank data payload for {}: {}", rsn, jsonPayload);
-
-		Request request = new Request.Builder()
-			.url(syncServerUrl)
-			.post(RequestBody.create(JSON, jsonPayload))
-			.header("Authorization", "Bearer " + jwtToken)
-			.header("Content-Type", "application/json")
-			.build();
-
-		try
-		{
-			// Execute synchronously
-			Response response = okHttpClient.newCall(request).execute();
-			try (response)
-			{
-				if (!response.isSuccessful())
-				{
-					String errorBody = response.body() != null ? response.body().string() : "No error body";
-					log.error("Bank data submission failed during shutdown: {} - {}", response.code(), errorBody);
-				}
-				else
-				{
-					log.info("Bank data submitted successfully during shutdown");
-					lastSyncedBankState = new HashMap<>(bankData);
-				}
-			}
-		}
-		catch (IOException e)
-		{
-			log.error("Failed to submit bank data during shutdown", e);
-		}
-	}
 
 	private void submitGETrade(GrandExchangeOffer offer)
 	{
