@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +92,7 @@ public class LootbagPlugin extends Plugin
 	private Map<String, Integer> lastSyncedBankState;
 	private boolean hasSyncedThisSession = false;
 	private Map<Integer, GrandExchangeOffer> lastGEOffers = new HashMap<>();
+	private final java.util.concurrent.ScheduledExecutorService executor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
 
 	@Override
 	protected void startUp()
@@ -186,6 +188,7 @@ public class LootbagPlugin extends Plugin
 		pendingBankItems = null;
 		syncScheduled = false;
 		hasSyncedThisSession = false;
+		executor.shutdown();
 	}
 	
 	public boolean isLoggedIn()
@@ -327,34 +330,22 @@ public class LootbagPlugin extends Plugin
 		final Map<Integer, Integer> bankItems = pendingBankItems;
 		final long bankValue = calculateBankValue(bankItems);
 		
-		new Thread(() -> {
-			try
+		executor.schedule(() -> {
+			long timeSinceLastChange = System.currentTimeMillis() - lastBankChangeTime;
+			
+			if (timeSinceLastChange >= DEBOUNCE_DELAY_MS)
 			{
-				while (true)
-				{
-					long timeSinceLastChange = System.currentTimeMillis() - lastBankChangeTime;
-					
-					if (timeSinceLastChange >= DEBOUNCE_DELAY_MS)
-					{
-						// User has stopped making changes, sync now
-						log.info("Bank changes settled, initiating sync...");
-						authenticateAndSubmit(bankItems, bankValue);
-						syncScheduled = false;
-						break;
-					}
-					else
-					{
-						// Still waiting for changes to settle
-						Thread.sleep(100);
-					}
-				}
-			}
-			catch (InterruptedException e)
-			{
-				log.warn("Sync debounce interrupted", e);
+				// User has stopped making changes, sync now
+				log.info("Bank changes settled, initiating sync...");
+				authenticateAndSubmit(bankItems, bankValue);
 				syncScheduled = false;
 			}
-		}).start();
+			else
+			{
+				// Still waiting for changes to settle, reschedule check
+				scheduleDebouncedSync();
+			}
+		}, 100, TimeUnit.MILLISECONDS);
 	}
 
 	private long calculateBankValue(Map<Integer, Integer> bankItems)
