@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.events.ItemContainerChanged;
@@ -266,7 +266,7 @@ public class LootbagPlugin extends Plugin
 		{
 			for (Item item : inventory.getItems())
 			{
-				if (item.getId() == ItemID.COINS_995)
+				if (item.getId() == ItemID.COINS)
 				{
 					snapshot.merge(item.getId(), item.getQuantity(), Integer::sum);
 				}
