@@ -6,7 +6,7 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.KeyEvent;
+
 
 import javax.inject.Inject;
 import javax.swing.JButton;
@@ -14,11 +14,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
-import javax.swing.KeyStroke;
+
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.DefaultEditorKit;
+
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.LinkBrowser;
@@ -71,18 +71,7 @@ class LootbagPanel extends PluginPanel
 		SwingUtilities.invokeLater(this::updateView);
 	}
 
-	private void enableCopyPaste(JTextField field)
-	{
-		// Explicitly enable copy/paste actions
-		field.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.META_DOWN_MASK), DefaultEditorKit.copyAction);
-		field.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.META_DOWN_MASK), DefaultEditorKit.pasteAction);
-		field.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.META_DOWN_MASK), DefaultEditorKit.cutAction);
-		
-		// Also support Ctrl for Windows/Linux
-		field.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK), DefaultEditorKit.copyAction);
-		field.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_DOWN_MASK), DefaultEditorKit.pasteAction);
-		field.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.CTRL_DOWN_MASK), DefaultEditorKit.cutAction);
-	}
+
 
 	private void buildLoginPanel()
 	{
@@ -97,7 +86,7 @@ class LootbagPanel extends PluginPanel
 
 		// Username label
 		c.gridy = 0;
-		JLabel emailLabel = new JLabel("Username:");
+		JLabel emailLabel = new JLabel("Lootbag.gg Username:");
 		emailLabel.setForeground(Color.WHITE);
 		loginPanel.add(emailLabel, c);
 
@@ -108,12 +97,12 @@ class LootbagPanel extends PluginPanel
 		emailField.setEditable(true);
 		emailField.setDragEnabled(true);
 		emailField.addActionListener(e -> passwordField.requestFocusInWindow());
-		enableCopyPaste(emailField);
+
 		loginPanel.add(emailField, c);
 
 		// Token label
 		c.gridy = 2;
-		JLabel passwordLabel = new JLabel("Token:");
+		JLabel passwordLabel = new JLabel("Lootbag.gg Token:");
 		passwordLabel.setForeground(Color.WHITE);
 		loginPanel.add(passwordLabel, c);
 
@@ -124,7 +113,7 @@ class LootbagPanel extends PluginPanel
 		passwordField.setEditable(true);
 		passwordField.setDragEnabled(true);
 		passwordField.addActionListener(e -> handleLogin());
-		enableCopyPaste(passwordField);
+
 		loginPanel.add(passwordField, c);
 
 		// Status label
