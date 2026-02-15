@@ -95,7 +95,6 @@ public class LootbagPlugin extends Plugin
 	private Map<String, Integer> lastSyncedBankState;
 	private boolean hasSyncedThisSession = false;
 	private final Map<Integer, GrandExchangeOffer> lastGEOffers = new HashMap<>();
-	private final java.util.concurrent.ScheduledExecutorService executor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
 
 	@Override
 	protected void startUp()
@@ -190,7 +189,6 @@ public class LootbagPlugin extends Plugin
 		pendingBankItems = null;
 
 		hasSyncedThisSession = false;
-		executor.shutdown();
 	}
 	
 	public boolean isLoggedIn()
@@ -321,7 +319,7 @@ public class LootbagPlugin extends Plugin
 					{
 						// Calculate price per item for logging
 						long pricePerItem = previous.getSpent() / Math.max(1, previous.getQuantitySold());
-						log.info("GE trade collected: {} {} x{} for {} gp each (Total: {})", 
+						log.debug("GE trade collected: {} {} x{} for {} gp each (Total: {})", 
 							previous.getState() == GrandExchangeOfferState.BOUGHT ? "BOUGHT" : 
 							previous.getState() == GrandExchangeOfferState.SOLD ? "SOLD" : "CANCELLED",
 							previous.getItemId(), 
