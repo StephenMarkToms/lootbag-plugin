@@ -7,8 +7,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+
 import javax.inject.Inject;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -144,23 +143,6 @@ class LootbagPanel extends PluginPanel
 		loginButton.setForeground(Color.WHITE);
 		loginButton.setFocusPainted(false);
 		loginButton.addActionListener(e -> handleLogin());
-		loginButton.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				if (loginButton.isEnabled())
-				{
-					loginButton.setBackground(ColorScheme.BRAND_ORANGE.darker());
-				}
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				loginButton.setBackground(ColorScheme.BRAND_ORANGE);
-			}
-		});
 		loginPanel.add(loginButton, c);
 
 		// Create account button
@@ -172,20 +154,6 @@ class LootbagPanel extends PluginPanel
 		createAccountBtn.setForeground(Color.WHITE);
 		createAccountBtn.setFocusPainted(false);
 		createAccountBtn.addActionListener(e -> LinkBrowser.browse("https://www.lootbag.gg/signup"));
-		createAccountBtn.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				createAccountBtn.setBackground(ColorScheme.DARK_GRAY_COLOR.darker());
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				createAccountBtn.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			}
-		});
 		loginPanel.add(createAccountBtn, c);
 	}
 
@@ -223,20 +191,6 @@ class LootbagPanel extends PluginPanel
 		logoutButton.setForeground(Color.WHITE);
 		logoutButton.setFocusPainted(false);
 		logoutButton.addActionListener(e -> handleLogout());
-		logoutButton.addMouseListener(new MouseAdapter()
-		{
-			@Override
-			public void mouseEntered(MouseEvent e)
-			{
-				logoutButton.setBackground(ColorScheme.DARK_GRAY_COLOR.darker());
-			}
-
-			@Override
-			public void mouseExited(MouseEvent e)
-			{
-				logoutButton.setBackground(ColorScheme.DARK_GRAY_COLOR);
-			}
-		});
 		loggedInPanel.add(logoutButton, c);
 	}
 
