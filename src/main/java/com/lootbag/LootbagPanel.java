@@ -171,7 +171,7 @@ class LootbagPanel extends PluginPanel
 		createAccountBtn.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		createAccountBtn.setForeground(Color.WHITE);
 		createAccountBtn.setFocusPainted(false);
-		createAccountBtn.addActionListener(e -> LinkBrowser.browse(config.createAccountUrl()));
+		createAccountBtn.addActionListener(e -> LinkBrowser.browse("https://www.lootbag.gg/signup"));
 		createAccountBtn.addMouseListener(new MouseAdapter()
 		{
 			@Override

@@ -19,16 +19,8 @@ public interface LootbagConfig extends Config
 	}
 
 
-	@ConfigItem(
-		keyName = "createAccountUrlProd",
-		name = "Create Account URL",
-		description = "The URL to create a new Lootbag account",
-		hidden = true
-	)
-	default String createAccountUrl()
-	{
-		return "https://www.lootbag.gg/signup";
-	}
+
+	
 	@ConfigItem(
 		keyName = "syncServerUrlProd",
 		name = "Sync Server URL",
