@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import net.runelite.api.Client;
 import net.runelite.api.InventoryID;
 import net.runelite.api.gameval.ItemID;
+
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.events.ItemContainerChanged;
@@ -35,6 +36,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import okhttp3.Response;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ClientToolbar;
@@ -93,7 +95,7 @@ public class LootbagPlugin extends Plugin
 
 	private Map<String, Integer> lastSyncedBankState;
 	private boolean hasSyncedThisSession = false;
-	private Map<Integer, GrandExchangeOffer> lastGEOffers = new HashMap<>();
+	private final Map<Integer, GrandExchangeOffer> lastGEOffers = new HashMap<>();
 	private final java.util.concurrent.ScheduledExecutorService executor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
 
 	@Override
@@ -239,7 +241,7 @@ public class LootbagPlugin extends Plugin
 		{
 			if (item.getId() != -1)
 			{
-				snapshot.merge(item.getId(), item.getQuantity(), Integer::sum);
+				snapshot.merge(item.getId(), item.getQuantity(), (a, b) -> a + b);
 			}
 		}
 
@@ -252,7 +254,7 @@ public class LootbagPlugin extends Plugin
 			{
 				if (item.getId() == ItemID.COINS)
 				{
-					snapshot.merge(item.getId(), item.getQuantity(), Integer::sum);
+					snapshot.merge(item.getId(), item.getQuantity(), (a, b) -> a + b);
 				}
 			}
 		}
@@ -405,7 +407,13 @@ public class LootbagPlugin extends Plugin
 						return;
 					}
 
-					String responseBody = response.body().string();
+					ResponseBody body = response.body();
+					if (body == null)
+					{
+						callback.accept(false, "Empty response from server");
+						return;
+					}
+					String responseBody = body.string();
 					JsonParser parser = new JsonParser();
 					JsonObject jsonResponse = parser.parse(responseBody).getAsJsonObject();
 
@@ -504,7 +512,13 @@ public class LootbagPlugin extends Plugin
 						return;
 					}
 
-					String responseBody = response.body().string();
+					ResponseBody body = response.body();
+					if (body == null)
+					{
+						log.error("Authentication failed: Empty response body");
+						return;
+					}
+					String responseBody = body.string();
 					JsonParser parser = new JsonParser();
 					JsonObject jsonResponse = parser.parse(responseBody).getAsJsonObject();
 					
@@ -690,7 +704,8 @@ public class LootbagPlugin extends Plugin
 				{
 					if (!response.isSuccessful())
 					{
-						String responseBody = response.body() != null ? response.body().string() : "";
+						ResponseBody body = response.body();
+						String responseBody = body != null ? body.string() : "";
 						log.error("Bank data submission failed: {} - {}", response.code(), responseBody);
 						
 						// If unauthorized, clear the cached token
@@ -817,7 +832,8 @@ public class LootbagPlugin extends Plugin
 				{
 					if (!response.isSuccessful())
 					{
-						String errorBody = response.body() != null ? response.body().string() : "No error body";
+						ResponseBody body = response.body();
+						String errorBody = body != null ? body.string() : "No error body";
 						log.error("GE trade submission failed: {} - {}", response.code(), errorBody);
 					}
 					else
