@@ -285,21 +285,25 @@ public class LootbagPlugin extends Plugin
 		bankDirty = true;
 	}
 
+	private long lastSyncTime = 0;
+
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
 		boolean bankOpen = client.getWidget(WidgetInfo.BANK_CONTAINER) != null && !client.getWidget(WidgetInfo.BANK_CONTAINER).isHidden();
 
-		if (isBankOpen && !bankOpen)
+		// Check for sync every tick if dirty, enforcing strict rate limit
+		if (bankDirty && pendingBankItems != null)
 		{
-			// Bank just closed
-			if (bankDirty && pendingBankItems != null)
+			long timeSinceLastSync = System.currentTimeMillis() - lastSyncTime;
+			if (timeSinceLastSync >= 300000)
 			{
-				log.info("Bank closed with changes, initiating sync...");
+				log.info("Bank dirty and rate limit passed ({}ms since last sync), initiating sync...", timeSinceLastSync);
 				final Map<Integer, Integer> itemsToSync = pendingBankItems;
 				final long value = calculateBankValue(itemsToSync);
 				authenticateAndSubmit(itemsToSync, value);
 				bankDirty = false;
+				lastSyncTime = System.currentTimeMillis();
 			}
 		}
 
