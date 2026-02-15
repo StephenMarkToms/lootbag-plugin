@@ -42,6 +42,8 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.events.ConfigChanged;
 import java.awt.image.BufferedImage;
+import net.runelite.api.events.GameTick;
+import net.runelite.api.widgets.WidgetInfo;
 
 @PluginDescriptor(
 	name = "Lootbag",
@@ -58,6 +60,9 @@ public class LootbagPlugin extends Plugin
 	private Client client;
 
 	@Inject
+	private ClientToolbar clientToolbar;
+	
+	@Inject
 	private LootbagConfig config;
 
 	@Inject
@@ -66,19 +71,35 @@ public class LootbagPlugin extends Plugin
 	@Inject
 	private Gson gson;
 
-
-
 	@Inject
 	private ConfigManager configManager;
 
 	@Inject
-	private ClientToolbar clientToolbar;
+	private ClientToolbar clientToolbar2; // Wait, I see duplicate ClientToolbar injection in the original file (lines 75-77). I should fix that while I am at it, but let's stick to the instruction. The target content has it once. Ah, line 77 in the file view shows clientToolbar. In my previous failed attempt I might have messed up the context.
+    // Let me check lines 70-80 in the file view.
+    // 77: private ClientToolbar clientToolbar;
+    // But lines 40-41 also show ClientToolbar import.
+    // Wait, lines 59-83 show fields.
+    // line 59: client
+    // line 62: config
+    // line 65: okHttpClient
+    // line 68: gson
+    // line 74: configManager
+    // line 77: clientToolbar
+    // line 80: panel
+    // line 83: itemManager
+
+    // In my previous replacement content I had clientToolbar injected twice in the block I provided, which was confusing.
+    // Let's use the file content exactly as seen.
+
+    // I will target from line 44 to 99.
+    
+    // ...
+	@Inject
+	private ItemManager itemManager;
 
 	@Inject
 	private LootbagPanel panel;
-
-	@Inject
-	private ItemManager itemManager;
 
 	private NavigationButton navButton;
 
@@ -86,9 +107,11 @@ public class LootbagPlugin extends Plugin
 
 	private String cachedJwtToken;
 	private long tokenExpiryTime;
-	private Map<Integer, Integer> pendingBankItems;
-	private long lastBankChangeTime;
-	private boolean syncScheduled;
+	private volatile Map<Integer, Integer> pendingBankItems;
+	private volatile long lastBankChangeTime;
+	private volatile boolean syncScheduled;
+	private boolean bankDirty;
+	private boolean isBankOpen;
 	private Map<String, Integer> lastSyncedBankState;
 	private boolean hasSyncedThisSession = false;
 	private Map<Integer, GrandExchangeOffer> lastGEOffers = new HashMap<>();
@@ -257,16 +280,30 @@ public class LootbagPlugin extends Plugin
 		}
 		
 		pendingBankItems = snapshot;
-		
-		// Only sync on first bank open of the session
-		if (!hasSyncedThisSession && !syncScheduled)
+		lastBankChangeTime = System.currentTimeMillis();
+		hasSyncedThisSession = true;
+		bankDirty = true;
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		boolean bankOpen = client.getWidget(WidgetInfo.BANK_CONTAINER) != null && !client.getWidget(WidgetInfo.BANK_CONTAINER).isHidden();
+
+		if (isBankOpen && !bankOpen)
 		{
-			log.info("First bank open this session, scheduling sync...");
-			syncScheduled = true;
-			hasSyncedThisSession = true;
-			lastBankChangeTime = System.currentTimeMillis();
-			scheduleDebouncedSync();
+			// Bank just closed
+			if (bankDirty && pendingBankItems != null)
+			{
+				log.info("Bank closed with changes, initiating sync...");
+				final Map<Integer, Integer> itemsToSync = pendingBankItems;
+				final long value = calculateBankValue(itemsToSync);
+				authenticateAndSubmit(itemsToSync, value);
+				bankDirty = false;
+			}
 		}
+
+		isBankOpen = bankOpen;
 	}
 
 	@Subscribe
@@ -324,26 +361,36 @@ public class LootbagPlugin extends Plugin
 		lastGEOffers.put(slot, currentSnapshot);
 	}
 
+
 	private void scheduleDebouncedSync()
 	{
-		// Calculate bank value on the client thread
-		final Map<Integer, Integer> bankItems = pendingBankItems;
-		final long bankValue = calculateBankValue(bankItems);
-		
 		executor.schedule(() -> {
-			long timeSinceLastChange = System.currentTimeMillis() - lastBankChangeTime;
-			
-			if (timeSinceLastChange >= DEBOUNCE_DELAY_MS)
+			try
 			{
-				// User has stopped making changes, sync now
-				log.info("Bank changes settled, initiating sync...");
-				authenticateAndSubmit(bankItems, bankValue);
-				syncScheduled = false;
+				long timeSinceLastChange = System.currentTimeMillis() - lastBankChangeTime;
+				
+				if (timeSinceLastChange >= DEBOUNCE_DELAY_MS)
+				{
+					// User has stopped making changes, sync now
+					log.info("Bank changes settled, initiating sync...");
+					Map<Integer, Integer> itemsToSync = pendingBankItems;
+					if (itemsToSync != null)
+					{
+						long value = calculateBankValue(itemsToSync);
+						authenticateAndSubmit(itemsToSync, value);
+					}
+					syncScheduled = false;
+				}
+				else
+				{
+					// Still waiting for changes to settle, reschedule check
+					scheduleDebouncedSync();
+				}
 			}
-			else
+			catch (Exception e)
 			{
-				// Still waiting for changes to settle, reschedule check
-				scheduleDebouncedSync();
+				log.error("Error in scheduled sync task", e);
+				syncScheduled = false;
 			}
 		}, 100, TimeUnit.MILLISECONDS);
 	}
