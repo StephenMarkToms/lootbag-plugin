@@ -13,7 +13,6 @@ import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
 import net.runelite.api.gameval.ItemID;
 
 import net.runelite.api.Item;
@@ -230,7 +229,8 @@ public class LootbagPlugin extends Plugin
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
-		if (event.getContainerId() != InventoryID.BANK.getId())
+		// Bank container ID is 95
+		if (event.getContainerId() != 95)
 		{
 			return;
 		}
@@ -247,7 +247,7 @@ public class LootbagPlugin extends Plugin
 
 		// Add inventory gold (Coins) to the snapshot if present
 		// This ensures we capture total liquid wealth
-		ItemContainer inventory = client.getItemContainer(InventoryID.INVENTORY);
+		ItemContainer inventory = client.getItemContainer(93);
 		if (inventory != null)
 		{
 			for (Item item : inventory.getItems())
