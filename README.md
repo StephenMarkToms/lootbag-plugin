@@ -7,6 +7,7 @@ The Lootbag RuneLite plugin automatically syncs your **Grand Exchange trades** a
 
 ### Create your portfolio and track your wealth
 ![Create your portfolio and track your wealth](images/portfolio-wealth-tracker.png)
+![Create your portfolio and track your wealth](images/portfolio.png)
 ![Create your portfolio and track your wealth](images/portfolio-wealth-details.png)
 Data is pushed to your dashboard as you play.
 
