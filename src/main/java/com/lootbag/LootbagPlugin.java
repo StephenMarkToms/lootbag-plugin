@@ -746,24 +746,30 @@ public class LootbagPlugin extends Plugin
 			return;
 		}
 
-		// Determine trade type
-		String tradeType = offer.getState() == GrandExchangeOfferState.BOUGHT ? "GE_BUY" : "GE_SELL";
-		
+		// Determine trade type.
+		// CANCELLED_BUY counts as a buy — the player received however many items
+		// filled before cancellation. Treating it as GE_SELL was the source of the
+		// "bought items show as sold" bug.
+		boolean isBuy = offer.getState() == GrandExchangeOfferState.BOUGHT
+				|| offer.getState() == GrandExchangeOfferState.CANCELLED_BUY;
+		String tradeType = isBuy ? "GE_BUY" : "GE_SELL";
+
 		// Build items given and received
 		List<Map<String, Object>> itemsGiven = new ArrayList<>();
 		List<Map<String, Object>> itemsReceived = new ArrayList<>();
-		
+
 		// Calculate price per item
 		long pricePerItem = offer.getSpent() / Math.max(1, offer.getQuantitySold());
 
-		if (offer.getState() == GrandExchangeOfferState.BOUGHT)
+		if (isBuy)
 		{
-			// Buying: gave coins, received item
+			// Buying (completed or partially-filled-then-cancelled):
+			// gave coins, received item
 			Map<String, Object> coins = new HashMap<>();
 			coins.put("id", 995); // Coins item ID
 			coins.put("quantity", offer.getSpent());
 			itemsGiven.add(coins);
-			
+
 			Map<String, Object> item = new HashMap<>();
 			item.put("id", offer.getItemId());
 			item.put("quantity", offer.getQuantitySold());
@@ -772,18 +778,18 @@ public class LootbagPlugin extends Plugin
 		}
 		else
 		{
-			// Selling: gave item, received coins
+			// Selling (completed or cancelled-sell): gave item, received coins
 			Map<String, Object> item = new HashMap<>();
 			item.put("id", offer.getItemId());
 			item.put("quantity", offer.getQuantitySold());
 			item.put("pricePerItem", pricePerItem);
 			itemsGiven.add(item);
-			
+
 			Map<String, Object> coins = new HashMap<>();
 			coins.put("id", 995); // Coins item ID
 			coins.put("quantity", offer.getSpent());
 			itemsReceived.add(coins);
-		}			
+		}
 
 		
 
