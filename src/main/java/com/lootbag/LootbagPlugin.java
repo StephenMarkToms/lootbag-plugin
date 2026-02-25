@@ -776,7 +776,7 @@ public class LootbagPlugin extends Plugin
 		long totalValue = offer.getSpent();
 		long pricePerItem = totalValue / Math.max(1, offer.getQuantitySold());
 
-		if (!isBuy && pricePerItem >= 100)
+		if (!isBuy)
 		{
 			// OSRS GE tax is 2% of the item's standard trade price, up to a max of 5,000,000 gp per item.
 			long taxPerItem = Math.min((long)(pricePerItem * 0.02), 5000000L);
