@@ -307,12 +307,27 @@ public class LootbagPlugin extends Plugin
 		// Check for transition to EMPTY (User collected items/cancelled)
 		if (offer.getState() == GrandExchangeOfferState.EMPTY) 
 		{
+			// Ignore EMPTY events if we are not fully logged into the game
+			// This prevents duplicate triggers from hop/logout clearing the GE
+			if (client.getGameState() != GameState.LOGGED_IN)
+			{
+				lastGEOffers.put(slot, currentSnapshot);
+				return;
+			}
+
 			GrandExchangeOffer previous = lastGEOffers.get(slot);
 			if (previous != null) 
 			{
+				// Only process if the PREVIOUS state was an active completion state
+				// (Prevents duplicate triggers upon initial login data loads)
+				boolean wasActive = previous.getState() == GrandExchangeOfferState.BOUGHT ||
+									previous.getState() == GrandExchangeOfferState.SOLD ||
+									previous.getState() == GrandExchangeOfferState.CANCELLED_BUY ||
+									previous.getState() == GrandExchangeOfferState.CANCELLED_SELL;
+
 				// Check if it was a valid trade (items sold > 0)
 				// This handles BOUGHT, SOLD, and CANCELLED (partial)
-				if (previous.getQuantitySold() > 0) 
+				if (wasActive && previous.getQuantitySold() > 0) 
 				{
 					// Only process if we're logged in
 					if (cachedJwtToken != null)
@@ -758,8 +773,17 @@ public class LootbagPlugin extends Plugin
 		List<Map<String, Object>> itemsGiven = new ArrayList<>();
 		List<Map<String, Object>> itemsReceived = new ArrayList<>();
 
-		// Calculate price per item
-		long pricePerItem = offer.getSpent() / Math.max(1, offer.getQuantitySold());
+		long totalValue = offer.getSpent();
+		long pricePerItem = totalValue / Math.max(1, offer.getQuantitySold());
+
+		if (!isBuy && pricePerItem >= 100)
+		{
+			// OSRS GE tax is 2% of the item's standard trade price, up to a max of 5,000,000 gp per item.
+			long taxPerItem = Math.min((long)(pricePerItem * 0.02), 5000000L);
+			long totalTax = taxPerItem * offer.getQuantitySold();
+			totalValue -= totalTax;
+			pricePerItem = totalValue / Math.max(1, offer.getQuantitySold());
+		}
 
 		if (isBuy)
 		{
@@ -767,7 +791,7 @@ public class LootbagPlugin extends Plugin
 			// gave coins, received item
 			Map<String, Object> coins = new HashMap<>();
 			coins.put("id", 995); // Coins item ID
-			coins.put("quantity", offer.getSpent());
+			coins.put("quantity", totalValue);
 			itemsGiven.add(coins);
 
 			Map<String, Object> item = new HashMap<>();
@@ -787,7 +811,7 @@ public class LootbagPlugin extends Plugin
 
 			Map<String, Object> coins = new HashMap<>();
 			coins.put("id", 995); // Coins item ID
-			coins.put("quantity", offer.getSpent());
+			coins.put("quantity", totalValue);
 			itemsReceived.add(coins);
 		}
 
@@ -798,7 +822,7 @@ public class LootbagPlugin extends Plugin
 		Map<String, Object> payload = new HashMap<>();
 		payload.put("rsn", rsn);
 		payload.put("tradeType", tradeType);
-		payload.put("value", offer.getSpent()); // Total GP value
+		payload.put("value", totalValue); // Total GP value
 		
 		// Format timestamp as ISO 8601 string
 		SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
