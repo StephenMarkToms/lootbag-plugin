@@ -227,40 +227,90 @@ public class LootbagPlugin extends Plugin
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
-		// Bank container ID is 95
-		if (event.getContainerId() != 95)
+		int id = event.getContainerId();
+		// Bank (95), Inventory (93), Equipment (94)
+		if (id != 95 && id != 93 && id != 94)
 		{
 			return;
 		}
 
-		// Update the pending container
-		Map<Integer, Integer> snapshot = new HashMap<>();
-		for (Item item : event.getItemContainer().getItems())
-		{
-			if (item.getId() != -1)
-			{
-				snapshot.merge(item.getId(), item.getQuantity(), (a, b) -> a + b);
-			}
-		}
-
-		// Add inventory gold (Coins) to the snapshot if present
-		// This ensures we capture total liquid wealth
-		ItemContainer inventory = client.getItemContainer(93);
-		if (inventory != null)
-		{
-			for (Item item : inventory.getItems())
-			{
-				if (item.getId() == ItemID.COINS)
-				{
-					snapshot.merge(item.getId(), item.getQuantity(), (a, b) -> a + b);
-				}
-			}
-		}
-		
-		pendingBankItems = snapshot;
+		pendingBankItems = buildTotalSnapshot();
 
 		hasSyncedThisSession = true;
 		bankDirty = true;
+	}
+
+	private Map<Integer, Integer> buildTotalSnapshot()
+	{
+		Map<Integer, Integer> snapshot = new HashMap<>();
+
+		int[] containerIds = { 95, 93, 94 };
+		for (int containerId : containerIds)
+		{
+			ItemContainer container = client.getItemContainer(containerId);
+			if (container != null)
+			{
+				for (Item item : container.getItems())
+				{
+					if (item.getId() != -1)
+					{
+						snapshot.merge(item.getId(), item.getQuantity(), Integer::sum);
+					}
+				}
+			}
+		}
+
+		GrandExchangeOffer[] offers = client.getGrandExchangeOffers();
+		if (offers != null)
+		{
+			for (GrandExchangeOffer offer : offers)
+			{
+				if (offer != null && offer.getState() != GrandExchangeOfferState.EMPTY)
+				{
+					boolean isBuy = offer.getState() == GrandExchangeOfferState.BUYING ||
+									offer.getState() == GrandExchangeOfferState.BOUGHT ||
+									offer.getState() == GrandExchangeOfferState.CANCELLED_BUY;
+					boolean isSell = offer.getState() == GrandExchangeOfferState.SELLING ||
+									 offer.getState() == GrandExchangeOfferState.SOLD ||
+									 offer.getState() == GrandExchangeOfferState.CANCELLED_SELL;
+
+					if (isBuy)
+					{
+						if (offer.getQuantitySold() > 0 && offer.getItemId() > 0)
+						{
+							snapshot.merge(offer.getItemId(), offer.getQuantitySold(), Integer::sum);
+						}
+						int coinsInGe = (offer.getTotalQuantity() * offer.getPrice()) - offer.getSpent();
+						if (coinsInGe > 0)
+						{
+							snapshot.merge(ItemID.COINS, coinsInGe, Integer::sum);
+						}
+					}
+					else if (isSell)
+					{
+						int itemsRemaining = offer.getTotalQuantity() - offer.getQuantitySold();
+						if (itemsRemaining > 0 && offer.getItemId() > 0)
+						{
+							snapshot.merge(offer.getItemId(), itemsRemaining, Integer::sum);
+						}
+						long spent = offer.getSpent();
+						if (spent > 0)
+						{
+							long pricePerItem = spent / Math.max(1, offer.getQuantitySold());
+							long taxPerItem = Math.min((long)(pricePerItem * 0.02), 5000000L);
+							long totalTax = taxPerItem * offer.getQuantitySold();
+							long netCoins = spent - totalTax;
+							if (netCoins > 0)
+							{
+								snapshot.merge(ItemID.COINS, (int)netCoins, Integer::sum);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return snapshot;
 	}
 
 	private long lastSyncTime = 0;
@@ -356,6 +406,10 @@ public class LootbagPlugin extends Plugin
 		
 		// Update cache with current snapshot
 		lastGEOffers.put(slot, currentSnapshot);
+
+		pendingBankItems = buildTotalSnapshot();
+		hasSyncedThisSession = true;
+		bankDirty = true;
 	}
 
 
